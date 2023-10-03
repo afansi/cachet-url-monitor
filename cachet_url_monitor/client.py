@@ -83,6 +83,21 @@ class CachetClient(object):
         else:
             raise exceptions.ComponentNonexistentError(component_id)
 
+    def get_component_name_and_status(self, component_id: int):
+        """Retrieves the name and the current status of the given component. It will fail if the component does
+        not exist or doesn't respond with the expected data.
+        :return component name and status.
+        """
+        get_status_request = requests.get(f"{self.url}/components/{component_id}", headers=self.headers)
+
+        if get_status_request.ok:
+            # The component exists.
+            jsonData = get_status_request.json()["data"]
+            name = jsonData["name"]
+            return name, status.ComponentStatus(int(jsonData["status"]))
+        else:
+            raise exceptions.ComponentNonexistentError(component_id)
+
     def push_status(self, component_id: int, component_status: status.ComponentStatus):
         """Pushes the status of the component to the cachet server.
         """

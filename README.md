@@ -15,6 +15,13 @@ Python plugin for [cachet](cachethq.io) that monitors an URL, verifying it's res
 
 This project is available at PyPI: [https://pypi.python.org/pypi/cachet-url-monitor](https://pypi.python.org/pypi/cachet-url-monitor)
 
+## Extension
+
+This repo extends the original [repo](https://github.com/mtakaki/cachet-url-monitor) by adding `JSON_CHECK` expectation type that allows to check for a specific value of a field within a JSON response data.
+
+
+In addition, it introduces the possibility for expecations to **update the status of a given component and to create incident**. Moreover, expectations could also be `independent `from the endpoint, meaning, they are not contribution to the final status of the endpoint.
+
 ## Configuration
 
 ```yaml
@@ -116,6 +123,7 @@ messages:
         - **LATENCY**, we measure how long the request took to get a response and fail if it's above the threshold
         . The unit is in seconds.
         - **REGEX**, we verify if the response body matches the given regex.
+        - **JSON_CHECK**, we verify if a given field in the json response data has a specified value.
     - **allowed_fails**, create incident/update component status only after specified amount of failed connection trials.
     - **component_id**, the id of the component we're monitoring. This will be used to update the status of the
      component. *mandatory*

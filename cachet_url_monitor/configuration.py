@@ -110,13 +110,13 @@ class Configuration(object):
         self.public_incidents = int(self.endpoint["public_incidents"])
 
         self.logger.info("Monitoring URL: %s %s" % (self.endpoint_method, self.endpoint_url))
-        self.expectations = [Expectation.create(expectation) for expectation in self.endpoint["expectation"]]
+        self.expectations = [Expectation.create(expectation, self.client) for expectation in self.endpoint["expectation"]]
         for expectation in self.expectations:
             self.logger.info("Registered expectation: %s" % (expectation,))
 
-    def get_incident_title(self):
+    def get_incident_title(self, status=None):
         """Generates incident title for current status."""
-        key = incident_title_map[self.status]
+        key = incident_title_map[status or self.status]
         template = self.messages.get(key, default_messages[key])
         return template.format(**self.endpoint)
 
@@ -187,6 +187,13 @@ class Configuration(object):
         self.message = ""
         for expectation in self.expectations:
             status: ComponentStatus = expectation.get_status(self.request)
+            
+            # update the internal component status of the expectation if any
+            expectation.update_component_status(status, self.request)
+            
+            # continue if this is an independent expectation
+            if expectation.is_independent():
+                continue
 
             # The greater the status is, the worse the state of the API is.
             if status.value > self.status.value:
@@ -208,6 +215,10 @@ class Configuration(object):
         Checks if update should be triggered - trigger it for all operational states
         and only for non-operational ones above the configured threshold (allowed_fails).
         """
+        
+        # call the method for each expectation
+        for expectation in self.expectations:
+            expectation.if_trigger_update(self.allowed_fails, self.logger)
 
         if self.status != st.ComponentStatus.OPERATIONAL:
             self.current_fails = self.current_fails + 1
@@ -222,6 +233,11 @@ class Configuration(object):
         """Pushes the status of the component to the cachet server. It will update the component
         status based on the previous call to evaluate().
         """
+        
+        # call the method for each expectation
+        for expectation in self.expectations:
+            expectation.push_status(self.client, self.logger)
+        
         if self.previous_status == self.status:
             # We don't want to keep spamming if there's no change in status.
             self.logger.info(f"No changes to component status.")
@@ -284,6 +300,17 @@ class Configuration(object):
         """If the component status has changed, we create a new incident (if this is the first time it becomes unstable)
         or updates the existing incident once it becomes healthy again.
         """
+        # call the method for each expectation
+        for expectation in self.expectations:
+            expectation.push_incident(
+                self.client,
+                self.public_incidents,
+                self.endpoint["name"],
+                self.get_incident_title(expectation.get_current_status()),
+                self.webhooks,
+                self.logger
+            )
+        
         if not self.trigger_update:
             return
         if hasattr(self, "incident_id") and self.status == st.ComponentStatus.OPERATIONAL:

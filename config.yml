@@ -1,31 +1,40 @@
 endpoints:
   - name: swagger
-    url: http://localhost:8080/swagger
+    url: http://localhost:8080/actuator/health
     method: GET
-    header:
-      SOME-HEADER: SOME-VALUE
-    timeout: 0.01
+    timeout: 5
     expectation:
       - type: HTTP_STATUS
         status_range: 200-300
         incident: MAJOR
       - type: LATENCY
-        threshold: 1
-      - type: REGEX
-        regex: '.*(<body).*'
+        threshold: 2
+      - type: JSON_CHECK
+        field: 'components.messagingService.details.RealService'
+        value: 'UP'
+        is_independent: true
+        component_id: 1
+      - type: JSON_CHECK
+        field: 'components.authentixService.details.RealService'
+        value: 'UP'
+        is_independent: true
+        component_id: 2
+      - type: JSON_CHECK
+        field: 'status.code'
+        value: 'UP'
     allowed_fails: 0
     frequency: 30
-    component_id: 1
-    metric_id: 1
+    component_id: 3
+    #metric_id: 1
     action:
       - CREATE_INCIDENT
       - UPDATE_STATUS
     public_incidents: true
     latency_unit: ms
 cachet:
-  api_url: https://demo.cachethq.io/api/v1
+  api_url: http://localhost:8010/api/v1
   token:
     - type: ENVIRONMENT_VARIABLE
       value: CACHET_TOKEN
     - type: TOKEN
-      value: my_token
+      value: zXNU0UCTUt9v1g1VmNIK
