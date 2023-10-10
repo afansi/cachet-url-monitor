@@ -44,6 +44,7 @@ class Expectation(object):
             self.message = ""
             self.allowed_fails = configuration.get("allowed_fails", None)
             self.independent = configuration.get('is_independent', False)
+            self.public_incidents = configuration.get("public_incidents", None)
 
     def update_component_status(self, status: ComponentStatus, response):
         """Update the component status if any
@@ -155,6 +156,9 @@ class Expectation(object):
         """
         if self.component_id is None:
             return
+
+        if self.public_incidents is not None:
+            public_incidents = self.public_incidents
 
         # # Only push incident for independent expectation
         # if not self.is_independent():
